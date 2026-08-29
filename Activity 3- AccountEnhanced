@@ -1,0 +1,128 @@
+public class Account {
+ private int accountNumber;
+ private String name;
+ private int age;
+ private double balance;
+ private double minimum_balance;
+ private String accounttype;
+ private String status ;
+ private int pin;
+ public Account(int accountNumber,String name,int age,double initialbalance,String accounttype){
+     this.accountNumber = accountNumber;
+     this.name = name;
+     if(age < 18){
+         this.age = 18;
+     }
+     else{
+     this.age = age;
+     }
+     if(accounttype.equals("Current")){
+     this.accounttype = accounttype;
+     }
+     else{
+         this.accounttype = "Savings";
+     }
+     this.balance = initialbalance;
+     if(accounttype.equals("Savings")){
+         minimum_balance = 500;
+         if(initialbalance < minimum_balance){
+             initialbalance = minimum_balance;
+         }
+     }
+     else{
+         minimum_balance = 1000;
+         if(initialbalance < minimum_balance){
+             initialbalance = minimum_balance;
+         }
+     }
+
+     this.status = "Active";
+    }
+public boolean deposit(double amount){
+     if(status.equals("Active")) {
+         if (amount > 0) {
+             balance += amount;
+             return true;
+         }
+     }
+return false;
+}
+public boolean withdraw(double amount,int pin) {
+    if(status.equals("Active")) {
+        if (verifyPin(pin)) {
+            if (amount > 0 && amount <= balance) {
+                balance -= amount;
+                if (balance < minimum_balance) {
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+public boolean closeAccount(){
+     if (status.equals("Active"))
+     {
+         status = "Inactive";
+         return true;
+     }
+     return false;
+}
+
+public boolean reopenAccount(){
+     if(status.equals("Inactive")){
+         status = "Active";
+         return true;
+     }
+return false;
+}
+
+public boolean setPin(int pin){
+     if(pin>1000 && pin<9999){
+         this.pin = pin;
+         return true;
+     }
+     return false;
+}
+
+public boolean verifyPin(int pin){
+     if(this.pin == pin){
+         return true;
+     }
+     return false;
+}
+
+public boolean hasPin(){
+     String str_pin = Integer.toString(pin);
+     if(str_pin != null){
+         return true;
+     }
+     return false;
+ }
+public int getAccountNumber(){
+     return accountNumber;
+}
+public String getName(){
+     return name;
+}
+public int getAge(){
+     return age;
+}
+public double getBalance(){
+     return balance;
+}
+public String getAccounttype(){
+     return accounttype;
+}
+public String getStatus(){
+     return status;
+}
+public void setName(String name){
+     this.name = name;
+}
+public void setAge(int age){
+     this.age = age;
+}
+}
