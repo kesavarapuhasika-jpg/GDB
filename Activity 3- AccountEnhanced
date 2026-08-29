@@ -1,4 +1,4 @@
-public class Account {
+public class AccountEnhanced {
  private int accountNumber;
  private String name;
  private int age;
@@ -7,7 +7,7 @@ public class Account {
  private String accounttype;
  private String status ;
  private int pin;
- public Account(int accountNumber,String name,int age,double initialbalance,String accounttype){
+ public AccountEnhanced(int accountNumber,String name,int age,double initialbalance,String accounttype){
      this.accountNumber = accountNumber;
      this.name = name;
      if(age < 18){
