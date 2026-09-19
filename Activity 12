@@ -1,0 +1,284 @@
+class AccountException extends Exception {
+    public AccountException(String message) {
+        super(message);
+    }
+}
+
+class InactiveAccountException extends AccountException {
+    public InactiveAccountException(String message) {
+        super(message);
+    }
+}
+
+class InsufficientBalanceException extends AccountException {
+    public InsufficientBalanceException(String message) {
+        super(message);
+    }
+}
+
+class InvalidAmountException extends AccountException {
+    public InvalidAmountException(String message) {
+        super(message);
+    }
+}
+
+class InvalidPinException extends AccountException {
+    public InvalidPinException(String message) {
+        super(message);
+    }
+}
+
+class MinimumBalanceViolationException extends AccountException {
+    public MinimumBalanceViolationException(String message) {
+        super(message);
+    }
+}
+
+class SavingsAccount extends AbstractAccount {
+    private double minBalance = 1000.0;
+    private double interestRate = 4.0;
+
+    public SavingsAccount(String accountNumber, String name, int age, double balance, String status, String pin) {
+        super(accountNumber, name, age, balance, "SAVINGS", status, pin);
+    }
+
+    public SavingsAccount(String accountNumber, String name, int age, double balance, String status, String pin, double minBalance, double interestRate) {
+        super(accountNumber, name, age, balance, "SAVINGS", status, pin);
+        this.minBalance = minBalance;
+        this.interestRate = interestRate;
+    }
+
+    @Override
+    public void processDebit(double amount) throws AccountException {
+        if ((this.balance - amount) < this.minBalance) {
+            throw new MinimumBalanceViolationException("Cannot breach minimum balance of Rs " + minBalance);
+        }
+        this.balance -= amount;
+    }
+
+    public void applyInterest() {
+        double interest = this.balance * (interestRate / 100.0);
+        this.balance += interest;
+    }
+
+    public double getMinBalance() { return minBalance; }
+    public double getInterestRate() { return interestRate; }
+}
+
+class SalaryAccount extends AbstractAccount {
+    private int inactiveMonths;
+    private String employerName;
+
+    public SalaryAccount(String accountNumber, String name, int age, double balance, String status, String pin, String employerName) {
+        super(accountNumber, name, age, balance, "SALARY", status, pin);
+        this.employerName = employerName;
+        this.inactiveMonths = 0;
+    }
+
+    @Override
+    public void processDebit(double amount) throws AccountException {
+        if (amount > this.balance) {
+            throw new InsufficientBalanceException("Insufficient funds in Salary account");
+        }
+        this.balance -= amount;
+    }
+
+    public String getEmployerName() { return employerName; }
+    public int getInactiveMonths() { return inactiveMonths; }
+    public void incrementInactiveMonths() { this.inactiveMonths++; }
+}
+
+interface IAccount {
+    String getAccountNumber();
+    String getName();
+    int getAge();
+    double getBalance();
+    String getAccountType();
+    String getStatus();
+    boolean validatePin(String enteredPin);
+    boolean changePin(String oldPin, String newPin);
+    void deposit(double amount) throws InvalidAmountException;
+    void withdraw(double amount, String enteredPin) throws AccountException;
+    void displayAccountInfo();
+}
+
+class FixedDepositAccount extends AbstractAccount {
+    private int tenureMonths;
+    private double interestRate;
+
+    public FixedDepositAccount(String accountNumber, String name, int age, double balance, String status, String pin, int tenureMonths, double interestRate) {
+        super(accountNumber, name, age, balance, "FIXED_DEPOSIT", status, pin);
+        this.tenureMonths = tenureMonths;
+        this.interestRate = interestRate;
+    }
+
+    @Override
+    public void processDebit(double amount) throws AccountException {
+        throw new AccountException("Premature withdrawal not allowed on Fixed Deposit");
+    }
+
+    public double calculateMaturityAmount() {
+        return this.balance * Math.pow(1 + (interestRate / 100.0) / 12, 12 * (tenureMonths / 12.0));
+    }
+
+    public int getTenureMonths() { return tenureMonths; }
+    public double getInterestRate() { return interestRate; }
+}
+
+class CurrentAccount extends AbstractAccount {
+    private double overdraftLimit;
+
+    public CurrentAccount(String accountNumber, String name, int age, double balance, String status, String pin, double overdraftLimit) {
+        super(accountNumber, name, age, balance, "CURRENT", status, pin);
+        this.overdraftLimit = overdraftLimit;
+    }
+
+    @Override
+    public void processDebit(double amount) throws AccountException {
+        if (amount > (this.balance + this.overdraftLimit)) {
+            throw new InsufficientBalanceException("Overdraft limit exceeded");
+        }
+        this.balance -= amount;
+    }
+
+    public double getOverdraftLimit() { return overdraftLimit; }
+    public void setOverdraftLimit(double overdraftLimit) { this.overdraftLimit = overdraftLimit; }
+}
+
+class AccountFactory {
+    public static IAccount createAccount(String type, String accNum, String name, int age, double balance, String status, String pin) {
+        if (type == null) return null;
+        switch (type.toUpperCase()) {
+            case "SAVINGS":
+                return new SavingsAccount(accNum, name, age, balance, status, pin, 1000.0, 4.0);
+            case "CURRENT":
+                return new CurrentAccount(accNum, name, age, balance, status, pin, 25000.0);
+            case "FIXED_DEPOSIT":
+            case "FD":
+                return new FixedDepositAccount(accNum, name, age, balance, status, pin, 12, 6.5);
+            case "SALARY":
+                return new SalaryAccount(accNum, name, age, balance, status, pin, "TechCorp");
+            default:
+                throw new IllegalArgumentException("Unknown account type: " + type);
+        }
+    }
+}
+
+abstract class AbstractAccount implements IAccount {
+    protected String accountNumber;
+    protected String name;
+    protected int age;
+    protected double balance;
+    protected String accountType;
+    protected String status;
+    protected String pin;
+
+    public AbstractAccount(String accountNumber, String name, int age, double balance, String accountType, String status, String pin) {
+        if (age < 18) throw new IllegalArgumentException("Customer age must be 18 or above");
+        if (balance < 0) throw new IllegalArgumentException("Initial balance cannot be negative");
+        if (pin == null || !pin.matches("\\d{4}")) throw new IllegalArgumentException("PIN must be 4 digits");
+        this.accountNumber = accountNumber;
+        this.name = name;
+        this.age = age;
+        this.balance = balance;
+        this.accountType = accountType;
+        this.status = status;
+        this.pin = pin;
+    }
+
+    public boolean validatePin(String enteredPin) {
+        return this.pin != null && this.pin.equals(enteredPin);
+    }
+
+    public boolean changePin(String oldPin, String newPin) {
+        if (!validatePin(oldPin)) return false;
+        if (newPin == null || !newPin.matches("\\d{4}")) return false;
+        this.pin = newPin;
+        return true;
+    }
+
+    public void deposit(double amount) throws InvalidAmountException {
+        if (amount <= 0) throw new InvalidAmountException("Deposit amount must be positive");
+        this.balance += amount;
+    }
+
+    public void withdraw(double amount, String enteredPin) throws AccountException {
+        if (!validatePin(enteredPin)) throw new InvalidPinException("Invalid PIN entered");
+        if (!"ACTIVE".equalsIgnoreCase(this.status)) throw new InactiveAccountException("Account is not active");
+        if (amount <= 0) throw new InvalidAmountException("Withdrawal amount must be positive");
+        processDebit(amount);
+    }
+
+    public abstract void processDebit(double amount) throws AccountException;
+
+    public void displayAccountInfo() {
+        System.out.println("Account Number: " + accountNumber);
+        System.out.println("Name: " + name);
+        System.out.println("Age: " + age);
+        System.out.println("Balance: Rs " + balance);
+        System.out.println("Account Type: " + accountType);
+        System.out.println("Status: " + status);
+    }
+
+    public String getAccountNumber() { return accountNumber; }
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    public double getBalance() { return balance; }
+    public String getAccountType() { return accountType; }
+    public String getStatus() { return status; }
+}
+
+
+public class TestInterfaceFactory {
+
+    public static void main(String[] args) {
+        System.out.println("=== Activity 12: Factory-Driven System Suite ===");
+
+        // Test 1: Savings Account Creation & Deposit
+        try {
+            IAccount savings = AccountFactory.createAccount("SAVINGS", "SA101", "Alice",25, 1000.0,"Active", "1234");
+            savings.deposit(500.0);
+            if (savings.getBalance() == 1500.0) {
+                System.out.println("[Test 1] Savings Account Creation & Deposit: [PASS]");
+            } else {
+                System.out.println("[Test 1] Savings Account Creation & Deposit: [FAIL]");
+            }
+        } catch (Exception e) {
+            System.out.println("[Test 1] Savings Account Creation & Deposit: [FAIL] - " + e.getMessage());
+        }
+
+        // Test 2: Current Account Overdraft Withdrawal
+        try {
+            IAccount current = AccountFactory.createAccount("CURRENT", "CA102", "Bob",37, 1000.0,"Active", "1234");
+            // Assuming current account allows overdraft up to limit
+            current.withdraw(1200.0, "1234");
+            System.out.println("[Test 2] Current Account Overdraft Withdrawal: [PASS]");
+        } catch (Exception e) {
+            System.out.println("[Test 2] Current Account Overdraft Withdrawal: [FAIL] - " + e.getMessage());
+        }
+
+        // Test 3: Fixed Deposit Premature Withdrawal Block
+        try {
+            IAccount fd = AccountFactory.createAccount("FIXED_DEPOSIT", "FD103", "Charlie",46, 5000.0,"Active", "1234");
+            fd.withdraw(1000.0, "1234");
+            // If withdrawal succeeds without exception, test fails
+            System.out.println("[Test 3] Fixed Deposit Premature Withdrawal Block: [FAIL]");
+        } catch (AccountException e) {
+            System.out.println("[Test 3] Fixed Deposit Premature Withdrawal Block: [PASS]");
+        } catch (Exception e) {
+            System.out.println("[Test 3] Fixed Deposit Premature Withdrawal Block: [FAIL] - Unexpected exception: " + e.getMessage());
+        }
+
+        // Test 4: Invalid Type Rejection
+        try {
+            AccountFactory.createAccount("INVESTMENT", "INV104", "David",40, 2000.0,"Active", "1234");
+            System.out.println("[Test 4] Invalid Type Rejection: [FAIL]");
+        } catch (IllegalArgumentException e) {
+            System.out.println("[Test 4] Invalid Type Rejection: [PASS]");
+        } catch (Exception e) {
+            System.out.println("[Test 4] Invalid Type Rejection: [FAIL] - Unexpected exception: " + e.getMessage());
+        }
+
+        System.out.println("Factory-driven architecture successfully verified!");
+    }
+}
